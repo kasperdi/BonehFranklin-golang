@@ -1,20 +1,10 @@
-package basicident
+package fullident
 
 import (
 	"crypto/rand"
-	"math/big"
 	"reflect"
 	"testing"
-
-	"github.com/cloudflare/circl/ecc/bls12381"
 )
-
-func TestOrderPrime(t *testing.T) {
-	q := new(big.Int).SetBytes(bls12381.Order())
-	if !q.ProbablyPrime(20) {
-		t.Error("q is not prime!!!!")
-	}
-}
 
 func TestEncryptDecrypt(t *testing.T) {
 	for i := 0; i < 20; i++ {
@@ -26,7 +16,7 @@ func TestEncryptDecrypt(t *testing.T) {
 		dID := Extract(mkey, "I am an ID")
 
 		c := Encrypt(P, Ppub, "I am an ID", M)
-		dec_M := Decrypt(&c, dID)
+		dec_M := Decrypt(&c, dID, P)
 
 		if !reflect.DeepEqual(dec_M, M) {
 			t.Errorf("Error: Decrypt(Encrypt(M) != M")
@@ -35,6 +25,12 @@ func TestEncryptDecrypt(t *testing.T) {
 }
 
 func TestEncryptDecryptIncorrectID(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
 	for i := 0; i < 20; i++ {
 		M := make([]byte, 32)
 		rand.Read(M)
@@ -44,7 +40,7 @@ func TestEncryptDecryptIncorrectID(t *testing.T) {
 		dID := Extract(mkey, "I am an ID")
 
 		c := Encrypt(P, Ppub, "I am an incorrect ID", M)
-		dec_M := Decrypt(&c, dID)
+		dec_M := Decrypt(&c, dID, P)
 
 		if reflect.DeepEqual(dec_M, M) {
 			t.Errorf("Error: Decrypt(Encrypt(M) == M")
