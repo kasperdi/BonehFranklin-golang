@@ -46,7 +46,7 @@ func handlePrivateKeyRequest(conn net.Conn, reader *bufio.Reader, params *IBEPar
 	}
 	id := string(idBytes)
 
-	fmt.Printf("%v asked for private key for \"%v\"\n", conn.RemoteAddr().String(), id)
+	fmt.Printf("%v asked for private key for \"%v\".\n", conn.RemoteAddr().String(), id)
 
 	key := fullident.Extract(params.masterKey, id)
 	keyBytes := key.BytesCompressed()
@@ -68,6 +68,8 @@ func handlePrivateKeyRequest(conn net.Conn, reader *bufio.Reader, params *IBEPar
 }
 
 func handleParameterRequest(conn net.Conn, params *IBEParameters) {
+	fmt.Printf("%v asked for parameters.\n", conn.RemoteAddr().String())
+
 	response := make([]byte, 0)
 	response = append(response, params.P.BytesCompressed()...)
 	response = append(response, params.Ppub.BytesCompressed()...)
