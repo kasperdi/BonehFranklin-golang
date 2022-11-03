@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
+	"log"
 
 	bls "github.com/cloudflare/circl/ecc/bls12381"
 	"github.com/kasperdi/BonehFranklin-golang/basicident"
@@ -13,6 +14,29 @@ type Ciphertext struct {
 	U *bls.G2
 	V []byte
 	W []byte
+}
+
+func (c *Ciphertext) Serialize() []byte {
+	bytes := c.U.BytesCompressed()
+	// We know that this is 32 bytes...
+	bytes = append(bytes, c.V...)
+	// And the same here...
+	bytes = append(bytes, c.W...)
+
+	if len(bytes) != 96+32+32 {
+		log.Fatalf("wrong byte length %v, expected %v", len(bytes), 96+32+32)
+	}
+	return bytes
+}
+
+func (c *Ciphertext) Deserialize(in []byte) {
+	if len(in) != 96+32+32 {
+		panic("wrong length of bytes")
+	}
+	c.U = new(bls.G2)
+	c.U.SetBytes(in[:96])
+	c.V = in[96 : 96+32]
+	c.W = in[96+32:]
 }
 
 func Setup() (*bls.Scalar, *bls.G2, *bls.G2) {

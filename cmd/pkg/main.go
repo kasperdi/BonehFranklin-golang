@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 
@@ -35,7 +37,7 @@ func handlePrivateKeyRequest(conn net.Conn, reader *bufio.Reader, params *IBEPar
 	if err != nil {
 		panic(err)
 	}
-	idLen := binary.BigEndian.Uint64(idLenBytes)
+	idLen := binary.BigEndian.Uint32(idLenBytes)
 
 	idBytes := make([]byte, idLen)
 	_, err = reader.Read(idBytes)
@@ -43,6 +45,8 @@ func handlePrivateKeyRequest(conn net.Conn, reader *bufio.Reader, params *IBEPar
 		panic(err)
 	}
 	id := string(idBytes)
+
+	fmt.Printf("%v asked for private key for \"%v\"\n", conn.RemoteAddr().String(), id)
 
 	key := fullident.Extract(params.masterKey, id)
 	keyBytes := key.BytesCompressed()
@@ -55,8 +59,11 @@ func handlePrivateKeyRequest(conn net.Conn, reader *bufio.Reader, params *IBEPar
 	}
 
 	n, err := conn.Write(response)
-	if n != 49 || err != nil {
-		panic("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa")
+	if err != nil {
+		panic(err)
+	}
+	if n != 49 {
+		panic("could not write all bytes")
 	}
 }
 
@@ -73,6 +80,9 @@ func handleConnection(conn net.Conn, params *IBEParameters) {
 	for {
 		reader := bufio.NewReader(conn)
 		reqType, err := reader.ReadByte()
+		if errors.Is(err, io.EOF) {
+			return
+		}
 		if err != nil {
 			fmt.Printf("Got an error while reading from %v: %v", conn.RemoteAddr().String(), err)
 			break
@@ -98,6 +108,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed while setting up TCP listener: %v", err)
 	}
+
+	fmt.Println("Server started on", ln.Addr().String())
 
 	// run loop forever (or until ctrl-c)
 	for {
