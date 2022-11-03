@@ -48,7 +48,7 @@ func handlePrivateKeyRequest(conn net.Conn, reader *bufio.Reader, params *IBEPar
 	keyBytes := key.BytesCompressed()
 
 	response := make([]byte, 49)
-	// Authentication successful :-)
+	// Authentication successful (y)
 	response[0] = 1
 	for i := 0; i < len(keyBytes); i++ {
 		response[i+1] = keyBytes[i]
