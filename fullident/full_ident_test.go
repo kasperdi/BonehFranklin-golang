@@ -11,12 +11,18 @@ func TestEncryptDecrypt(t *testing.T) {
 		M := make([]byte, 32)
 		rand.Read(M)
 
-		mkey, P, Ppub := Setup()
+		mkey, pp, err := Setup()
+		if err != nil {
+			t.Error(err)
+		}
 
-		dID := Extract(mkey, "I am an ID")
+		pk := Extract(&mkey, "I am an ID")
 
-		c := Encrypt(P, Ppub, "I am an ID", M)
-		dec_M := Decrypt(&c, dID, P)
+		c := Encrypt(&pp, "I am an ID", M)
+		dec_M, err := Decrypt(&pp, &pk, &c)
+		if err != nil {
+			t.Error(err)
+		}
 
 		if !reflect.DeepEqual(dec_M, M) {
 			t.Errorf("Error: Decrypt(Encrypt(M) != M")
@@ -25,22 +31,22 @@ func TestEncryptDecrypt(t *testing.T) {
 }
 
 func TestEncryptDecryptIncorrectID(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
-
 	for i := 0; i < 20; i++ {
 		M := make([]byte, 32)
 		rand.Read(M)
 
-		mkey, P, Ppub := Setup()
+		mkey, pp, err := Setup()
+		if err != nil {
+			t.Error(err)
+		}
 
-		dID := Extract(mkey, "I am an ID")
+		pk := Extract(&mkey, "I am an ID")
 
-		c := Encrypt(P, Ppub, "I am an incorrect ID", M)
-		dec_M := Decrypt(&c, dID, P)
+		c := Encrypt(&pp, "I am an incorrect ID", M)
+		dec_M, err := Decrypt(&pp, &pk, &c)
+		if err == nil {
+			t.Error(err)
+		}
 
 		if reflect.DeepEqual(dec_M, M) {
 			t.Errorf("Error: Decrypt(Encrypt(M) == M")
@@ -59,30 +65,31 @@ func BenchmarkExtract(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Extract(mkey, "I am an ID")
+		Extract(&mkey, "I am an ID")
 	}
 }
 
 func BenchmarkEncrypt(b *testing.B) {
 	M := make([]byte, 32)
 	rand.Read(M)
-	_, P, Ppub := Setup()
+	_, pp, _ := Setup()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Encrypt(P, Ppub, "I am an ID", M)
+		Encrypt(&pp, "I am an ID", M)
 	}
 }
 
 func BenchmarkDecrypt(b *testing.B) {
 	M := make([]byte, 32)
 	rand.Read(M)
-	mkey, P, Ppub := Setup()
-	dID := Extract(mkey, "I am an ID")
-	c := Encrypt(P, Ppub, "I am an ID", M)
+	mkey, pp, _ := Setup()
+
+	pk := Extract(&mkey, "I am an ID")
+	c := Encrypt(&pp, "I am an ID", M)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Decrypt(&c, dID, P)
+		Decrypt(&pp, &pk, &c)
 	}
 }

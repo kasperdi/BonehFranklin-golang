@@ -21,12 +21,19 @@ func TestEncryptDecrypt(t *testing.T) {
 		M := make([]byte, 32)
 		rand.Read(M)
 
-		mkey, P, Ppub := Setup()
+		mkey, pp, err := Setup()
+		if err != nil {
+			t.Error(err)
+		}
 
-		dID := Extract(mkey, "I am an ID")
+		pk := Extract(&mkey, "I am an ID")
 
-		c := Encrypt(P, Ppub, "I am an ID", M)
-		dec_M := Decrypt(&c, dID)
+		c, err := Encrypt(&pp, "I am an ID", M)
+		if err != nil {
+			t.Error(err)
+		}
+
+		dec_M := Decrypt(&pk, &c)
 
 		if !reflect.DeepEqual(dec_M, M) {
 			t.Errorf("Error: Decrypt(Encrypt(M) != M")
@@ -39,12 +46,19 @@ func TestEncryptDecryptIncorrectID(t *testing.T) {
 		M := make([]byte, 32)
 		rand.Read(M)
 
-		mkey, P, Ppub := Setup()
+		mkey, pp, err := Setup()
+		if err != nil {
+			t.Error(err)
+		}
 
-		dID := Extract(mkey, "I am an ID")
+		pk := Extract(&mkey, "I am an ID")
 
-		c := Encrypt(P, Ppub, "I am an incorrect ID", M)
-		dec_M := Decrypt(&c, dID)
+		c, err := Encrypt(&pp, "I am an incorrect ID", M)
+		if err != nil {
+			t.Error(err)
+		}
+
+		dec_M := Decrypt(&pk, &c)
 
 		if reflect.DeepEqual(dec_M, M) {
 			t.Errorf("Error: Decrypt(Encrypt(M) == M")

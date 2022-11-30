@@ -50,7 +50,7 @@ func writeParametersFile(P *bls.G2, Ppub *bls.G2) {
 	}
 }
 
-func readParametersFile() (*bls.G2, *bls.G2) {
+func readParametersFile() fullident.PublicParameters {
 	fileBytes, err := os.ReadFile("params.bin")
 	if err != nil {
 		panic(err)
@@ -62,10 +62,10 @@ func readParametersFile() (*bls.G2, *bls.G2) {
 
 	P := new(bls.G2)
 	P.SetBytes(fileBytes[:96])
-	Ppub := new(bls.G2)
-	Ppub.SetBytes(fileBytes[96:])
+	PPub := new(bls.G2)
+	PPub.SetBytes(fileBytes[96:])
 
-	return P, Ppub
+	return fullident.PublicParameters{P: P, PPub: PPub}
 }
 
 func handleParametersCommand(pkgAddress string) {
@@ -103,7 +103,7 @@ func writePrivateKeyFile(dID *bls.G1) {
 	}
 }
 
-func readPrivateKeyFile() *bls.G1 {
+func readPrivateKeyFile() fullident.PrivateKey {
 	fileBytes, err := os.ReadFile("privatekey.bin")
 	if err != nil {
 		panic(err)
@@ -116,7 +116,7 @@ func readPrivateKeyFile() *bls.G1 {
 	dID := new(bls.G1)
 	dID.SetBytes(fileBytes)
 
-	return dID
+	return fullident.PrivateKey{D_ID: dID}
 }
 
 func handlePrivateKeyCommand(pkgAddress, id string) {
@@ -162,7 +162,7 @@ func handlePrivateKeyCommand(pkgAddress, id string) {
 }
 
 func handleEncryptCommand(id, msg string) {
-	P, Ppub := readParametersFile()
+	pp := readParametersFile()
 
 	// TODO: Apply PKCS#7 padding to the message (and split into multiple blocks if necessary)
 	msgBytes := []byte(msg)
@@ -171,14 +171,14 @@ func handleEncryptCommand(id, msg string) {
 		paddedMsgBytes[i+(32-len(msgBytes))] = b
 	}
 
-	c := fullident.Encrypt(P, Ppub, id, paddedMsgBytes)
+	c := fullident.Encrypt(&pp, id, paddedMsgBytes)
 	cBytes := c.Serialize()
 	println(hex.EncodeToString(cBytes))
 }
 
 func handleDecryptCommand(ciphertext string) {
-	P, _ := readParametersFile()
-	dID := readPrivateKeyFile()
+	pp := readParametersFile()
+	pk := readPrivateKeyFile()
 
 	ciphertextBytes, err := hex.DecodeString(ciphertext)
 	if err != nil {
@@ -188,6 +188,9 @@ func handleDecryptCommand(ciphertext string) {
 	c := new(fullident.Ciphertext)
 	c.Deserialize(ciphertextBytes)
 
-	msg := fullident.Decrypt(c, dID, P)
+	msg, err := fullident.Decrypt(&pp, &pk, c)
+	if err != nil {
+		panic(err)
+	}
 	println(string(msg))
 }

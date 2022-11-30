@@ -17,17 +17,21 @@ const PRIVATE_KEY_REQUEST = 1
 const PARAMETER_REQUEST = 2
 
 type IBEParameters struct {
-	masterKey *bls.Scalar
+	masterKey fullident.MasterKey
 	P         *bls.G2
 	Ppub      *bls.G2
 }
 
 func setup() IBEParameters {
-	masterKey, P, Ppub := fullident.Setup()
+	masterKey, pp, err := fullident.Setup()
+	if err != nil {
+		panic(err)
+	}
+
 	return IBEParameters{
 		masterKey: masterKey,
-		P:         P,
-		Ppub:      Ppub,
+		P:         pp.P,
+		Ppub:      pp.PPub,
 	}
 }
 
@@ -48,8 +52,8 @@ func handlePrivateKeyRequest(conn net.Conn, reader *bufio.Reader, params *IBEPar
 
 	fmt.Printf("%v asked for private key for \"%v\".\n", conn.RemoteAddr().String(), id)
 
-	key := fullident.Extract(params.masterKey, id)
-	keyBytes := key.BytesCompressed()
+	key := fullident.Extract(&params.masterKey, id)
+	keyBytes := key.D_ID.BytesCompressed()
 
 	response := make([]byte, 49)
 	// Authentication successful (y)
