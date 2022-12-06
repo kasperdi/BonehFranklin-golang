@@ -12,6 +12,6 @@ fig = plt.figure(figsize = (10, 5))
 # creating the bar plot
 plt.bar(functions, runtimes, color ='royalblue')
  
-plt.ylabel("Miliseconds")
+plt.ylabel("Milliseconds")
 plt.title("Benchmarking of IBE implementation")
 plt.show()
