@@ -1,5 +1,6 @@
 # Boneh Franklin
 
+Intended for learning purposes only!
 This package uses [bilinear pairings on the BLS12-381 curve](https://pkg.go.dev/github.com/cloudflare/circl/ecc/bls12381).
 
 ## Running the PKG
